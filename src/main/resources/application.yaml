@@ -1,11 +1,13 @@
+server:
+  port: 8080
 spring:
   application:
     name: rss-reading-service
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer # it was from jackson 2 version which was causing issues for producer setup
       properties:
         spring.json.add.type.headers: false
 
