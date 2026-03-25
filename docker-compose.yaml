@@ -1,0 +1,122 @@
+version: '3.8'
+
+networks:
+  kafka-network:
+    driver: bridge
+
+services:
+  kafka1:
+    image: confluentinc/cp-kafka:7.8.0
+    hostname: kafka1
+    container_name: kafka1
+    user: root
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+      - "29094:29094"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_BROKER_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka1:9093,2@kafka2:9093,3@kafka3:9093'
+
+      # Three listeners: external (host), internal (docker), controller
+      KAFKA_LISTENERS: 'EXTERNAL://0.0.0.0:9092,INTERNAL://kafka1:29094,CONTROLLER://kafka1:9093'
+
+      # External advertises localhost — what your Spring Boot app will use after bootstrap
+      # Internal advertises docker hostname — what brokers use to talk to each other
+      KAFKA_ADVERTISED_LISTENERS: 'EXTERNAL://localhost:9092,INTERNAL://kafka1:29094'
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+
+      CLUSTER_ID: 'EmptNWtoR4GGWx-BH6nGLQ'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    volumes:
+      - ./kafka1/data:/var/lib/kafka/data
+    networks:
+      - kafka-network
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.8.0
+    hostname: kafka2
+    container_name: kafka2
+    user: root
+    ports:
+      - "9094:9094"
+      - "9095:9093"
+      - "29098:29098"
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_BROKER_ID: 2
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka1:9093,2@kafka2:9093,3@kafka3:9093'
+
+      KAFKA_LISTENERS: 'EXTERNAL://0.0.0.0:9094,INTERNAL://kafka2:29098,CONTROLLER://kafka2:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'EXTERNAL://localhost:9094,INTERNAL://kafka2:29098'
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+
+      CLUSTER_ID: 'EmptNWtoR4GGWx-BH6nGLQ'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    volumes:
+      - ./kafka2/data:/var/lib/kafka/data
+    networks:
+      - kafka-network
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.8.0
+    hostname: kafka3
+    container_name: kafka3
+    user: root
+    ports:
+      - "9096:9096"
+      - "9097:9093"
+      - "29097:29097"
+    environment:
+      KAFKA_NODE_ID: 3
+      KAFKA_BROKER_ID: 3
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka1:9093,2@kafka2:9093,3@kafka3:9093'
+
+      KAFKA_LISTENERS: 'EXTERNAL://0.0.0.0:9096,INTERNAL://kafka3:29097,CONTROLLER://kafka3:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'EXTERNAL://localhost:9096,INTERNAL://kafka3:29097'
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+
+      CLUSTER_ID: 'EmptNWtoR4GGWx-BH6nGLQ'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    volumes:
+      - ./kafka3/data:/var/lib/kafka/data
+    networks:
+      - kafka-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-cluster-ui
+    ports:
+      - "8080:8080"
+    environment:
+      # kafka-ui is inside same docker network, so it uses INTERNAL listener
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29098,kafka2:29098,kafka3:29098
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    networks:
+      - kafka-network
